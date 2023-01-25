@@ -63,7 +63,7 @@ make run
 2. **Build the Repository**.\
 In the terminal, write the following command to build the object files,
 ```sh
-gcc -fopenmp -o main.o main.c -lm
+mpicc -o main.o main.c -lm
 ```
 
 3. **Queue the Build**.\
