@@ -3,8 +3,8 @@
 #include <mpi.h>
 
 #include "main.h"
-#define ITERATIONS 1
-#define N_THREADS 1
+#define ITERATIONS 5000
+#define N_THREADS 14
 
 #include "beehive.h"
 extern uint8_t beehive[BEEHIVE_HEIGHT][BEEHIVE_WIDTH];
@@ -39,7 +39,7 @@ void populate_grid(uint8_t* grid, int height, int width, uint8_t* pattern, int p
  * @param height the height of the grid.
  * @param width the width of the grid.
  */
-void update_grid(uint8_t* grid, int height, int width) {
+void update_grid(int iterations, uint8_t* grid, int height, int width) {
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -48,34 +48,40 @@ void update_grid(uint8_t* grid, int height, int width) {
     int start = rank * rows_per_process;
     int end = start + rows_per_process;
 
-    uint8_t* new_grid = malloc(height * width * sizeof(uint8_t));
-    int alive_neighbours;
-
-    for (int i = start; i < end; i++) {
-        for (int j = 0; j < width; j++) {
-            alive_neighbours = count_live_neighbors(i, j, grid, height, width);
-
-            // Check all central cells of the matrix
-            switch (grid[i * width + j]) {
-                case ALIVE:
-                    if (alive_neighbours < 2 || alive_neighbours > 3) {
-                        new_grid[i * width + j] = DEAD;
-                    } 
-                    break;
-
-                case DEAD:
-                    if (alive_neighbours == 3) { 
-                        new_grid[i * width + j] = ALIVE;
-                    } 
-                    break;
-            } 
-        }
+    if (rank == size - 1) {
+        end = height; // last process gets the remaining rows.
     }
 
-    MPI_Allgather(new_grid + start * width, rows_per_process * width, MPI_UNSIGNED_CHAR, grid, rows_per_process * width, MPI_UNSIGNED_CHAR, MPI_COMM_WORLD);
-    free(new_grid);
+    for(int iteration = 0; iteration < iterations; iteration++) {
+        uint8_t* new_grid = malloc(height * width * sizeof(uint8_t));
+        for (int i = start; i < end; i++) {
+            for (int j = 0; j < width; j++) {
+                int alive_neighbours = count_live_neighbors(i, j, grid, height, width);
 
-    print_grid((uint8_t*)grid, height, width);
+                // Update cell
+                switch (grid[i * width + j]) {
+                    case ALIVE:
+                        if (alive_neighbours < 2 || alive_neighbours > 3) {
+                            new_grid[i * width + j] = DEAD;
+                        } else {
+                            new_grid[i * width + j] = grid[i * width + j];
+                        }
+                        break;
+
+                    case DEAD:
+                        if (alive_neighbours == 3) { 
+                            new_grid[i * width + j] = ALIVE;
+                        } else {
+                            new_grid[i * width + j] = grid[i * width + j];
+                        }
+                        break;
+                } 
+            }
+        }
+        print_grid((uint8_t*)grid, height, width);
+        MPI_Allgather(new_grid + start * width, rows_per_process * width, MPI_UNSIGNED_CHAR, grid, rows_per_process * width, MPI_UNSIGNED_CHAR, MPI_COMM_WORLD);
+        free(new_grid);
+    }
 }
 
 /**
@@ -151,20 +157,20 @@ int main(int argc, char* argv[]) {
     // --
     // Glider
     // --
-    int patternHeight = GLIDER_HEIGHT;
-    int patternWidth = GLIDER_WIDTH;
-    uint8_t* pattern = (uint8_t*)glider;
+    // int patternHeight = GLIDER_HEIGHT;
+    // int patternWidth = GLIDER_WIDTH;
+    // uint8_t* pattern = (uint8_t*)glider;
 
     // --
     // Grower
     // --
-    // int patternHeight = GROWER_HEIGHT;
-    // int patternWidth = GROWER_WIDTH;
-    // uint8_t* pattern = (uint8_t*)grower;
+    int patternHeight = GROWER_HEIGHT;
+    int patternWidth = GROWER_WIDTH;
+    uint8_t* pattern = (uint8_t*)grower;
 
     populate_grid((uint8_t*) grid, height, width, pattern, patternHeight, patternWidth);
     print_grid((uint8_t*)grid, height, width);
-    update_grid((uint8_t*)grid, height, width);
+    update_grid(ITERATIONS, (uint8_t*)grid, height, width);
 
     MPI_Finalize();
     return 0;
