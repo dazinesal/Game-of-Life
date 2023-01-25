@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "/usr/local/opt/libomp/include/omp.h"
+// for MacOSx users, 
+// #include "/usr/local/opt/libomp/include/omp.h"
+// for Windows users,
+// #include <omp.h>
 
 #include "main.h"
 #include "beehive.h"
@@ -122,6 +125,7 @@ int main() {
     uint8_t* pattern = (uint8_t*)beehive;
 
     populate_grid((uint8_t*) grid, height, width, pattern, patternHeight, patternWidth);
+    update_grid((uint8_t*)grid, height, width);
     print_grid((uint8_t*)grid, height, width);
 
     return 0;
