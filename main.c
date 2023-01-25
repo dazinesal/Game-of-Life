@@ -141,9 +141,9 @@ void print_grid(uint8_t* grid, int height, int width) {
  * Main Method
  */
 int main(int argc, char* argv[]) {
-    int height = 20;
-    int width = 20;
-    uint8_t grid[20][20] = {0};
+    int height = 3000;
+    int width = 3000;
+    uint8_t grid[3000][3000] = {0};
 
     MPI_Init(&argc, &argv);
 
