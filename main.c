@@ -6,9 +6,15 @@
 // #include <omp.h>
 
 #include "main.h"
-#include "beehive.h"
 
+#include "beehive.h"
 extern uint8_t beehive[BEEHIVE_HEIGHT][BEEHIVE_WIDTH];
+
+#include "glider.h"
+extern uint8_t glider[GLIDER_HEIGHT][GLIDER_WIDTH];
+
+#include "grower.h"
+extern uint8_t grower[GROWER_HEIGHT][GROWER_WIDTH];
 
 /**
  * Initializes the grid.
@@ -123,6 +129,20 @@ int main() {
     int patternHeight = BEEHIVE_HEIGHT;
     int patternWidth = BEEHIVE_WIDTH;
     uint8_t* pattern = (uint8_t*)beehive;
+
+    // --
+    // Glider
+    // --
+    // int patternHeight = GLIDER_HEIGHT;
+    // int patternWidth = GLIDER_WIDTH;
+    // uint8_t* pattern = (uint8_t*)glider;
+
+    // --
+    // Grower
+    // --
+    // int patternHeight = GROWER_HEIGHT;
+    // int patternWidth = GROWER_WIDTH;
+    // uint8_t* pattern = (uint8_t*)grower;
 
     populate_grid((uint8_t*) grid, height, width, pattern, patternHeight, patternWidth);
     update_grid((uint8_t*)grid, height, width);
