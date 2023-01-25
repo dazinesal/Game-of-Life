@@ -1,13 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-// for MacOSx users, 
-// #include "/usr/local/opt/libomp/include/omp.h"
-// for Windows/Linux users,
-#include <omp.h>
+#include <mpi.h>
 
 #include "main.h"
-#define ITERATIONS 5000
-#define N_THREADS 4
+#define ITERATIONS 1
+#define N_THREADS 1
 
 #include "beehive.h"
 extern uint8_t beehive[BEEHIVE_HEIGHT][BEEHIVE_WIDTH];
@@ -43,29 +40,42 @@ void populate_grid(uint8_t* grid, int height, int width, uint8_t* pattern, int p
  * @param width the width of the grid.
  */
 void update_grid(uint8_t* grid, int height, int width) {
-    for (int g = 0; g < ITERATIONS; g++ ) {
-        #pragma omp parallel for num_threads(N_THREADS)
-        for (int i = 1; i <= height; i++) {
-            for (int j = 1; j <= width; j++) {
-                int aliveNeighbors = count_live_neighbors(i, j, grid, height, width);
-                
-                // Check all central cells of the matrix
-                switch (grid[i * width + j]) {
-                    case 0: // dead
-                        if (aliveNeighbors == 3) {
-                            grid[i * width + j] = ALIVE;
-                        }
-                        break;
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-                    case 1: // alive
-                        if (aliveNeighbors < 2 || aliveNeighbors > 3) {
-                            grid[i * width + j] = DEAD;
-                        }
-                        break;
-                }           
-            }
+    int rows_per_process = height / size;
+    int start = rank * rows_per_process;
+    int end = start + rows_per_process;
+
+    uint8_t* new_grid = malloc(height * width * sizeof(uint8_t));
+    int alive_neighbours;
+
+    for (int i = start; i < end; i++) {
+        for (int j = 0; j < width; j++) {
+            alive_neighbours = count_live_neighbors(i, j, grid, height, width);
+
+            // Check all central cells of the matrix
+            switch (grid[i * width + j]) {
+                case ALIVE:
+                    if (alive_neighbours < 2 || alive_neighbours > 3) {
+                        new_grid[i * width + j] = DEAD;
+                    } 
+                    break;
+
+                case DEAD:
+                    if (alive_neighbours == 3) { 
+                        new_grid[i * width + j] = ALIVE;
+                    } 
+                    break;
+            } 
         }
     }
+
+    MPI_Allgather(new_grid + start * width, rows_per_process * width, MPI_UNSIGNED_CHAR, grid, rows_per_process * width, MPI_UNSIGNED_CHAR, MPI_COMM_WORLD);
+    free(new_grid);
+
+    print_grid((uint8_t*)grid, height, width);
 }
 
 /**
@@ -124,10 +134,12 @@ void print_grid(uint8_t* grid, int height, int width) {
 /**
  * Main Method
  */
-int main() {
-    int height = 3000;
-    int width = 3000;
-    uint8_t grid[3000][3000] = {0};
+int main(int argc, char* argv[]) {
+    int height = 20;
+    int width = 20;
+    uint8_t grid[20][20] = {0};
+
+    MPI_Init(&argc, &argv);
 
     // --
     // Beehive
@@ -139,20 +151,21 @@ int main() {
     // --
     // Glider
     // --
-    // int patternHeight = GLIDER_HEIGHT;
-    // int patternWidth = GLIDER_WIDTH;
-    // uint8_t* pattern = (uint8_t*)glider;
+    int patternHeight = GLIDER_HEIGHT;
+    int patternWidth = GLIDER_WIDTH;
+    uint8_t* pattern = (uint8_t*)glider;
 
     // --
     // Grower
     // --
-    int patternHeight = GROWER_HEIGHT;
-    int patternWidth = GROWER_WIDTH;
-    uint8_t* pattern = (uint8_t*)grower;
+    // int patternHeight = GROWER_HEIGHT;
+    // int patternWidth = GROWER_WIDTH;
+    // uint8_t* pattern = (uint8_t*)grower;
 
     populate_grid((uint8_t*) grid, height, width, pattern, patternHeight, patternWidth);
-    update_grid((uint8_t*)grid, height, width);
     print_grid((uint8_t*)grid, height, width);
+    update_grid((uint8_t*)grid, height, width);
 
+    MPI_Finalize();
     return 0;
 }
