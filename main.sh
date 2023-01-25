@@ -10,7 +10,7 @@
 
 module purge
 module load 2020
-module load GCC
+module load GCC/9.3.0
 
 echo "OpenMP Game Of Life"
 echo
@@ -20,6 +20,6 @@ for ncores in {16..16}
 do
   export OMP_NUM_THREADS=$ncores
   echo "CPUS: " $OMP_NUM_THREADS
-  ./main
+  ./main.o
   echo "DONE "
 done

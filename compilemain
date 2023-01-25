@@ -1,5 +1,5 @@
 #!/bin/bash
 
 module load 2022
-module load gcc
+module load GCC/9.3.0
 gcc -fopenmp -o main.o main.c -lm
