@@ -6,6 +6,7 @@
 #include <omp.h>
 
 #include "main.h"
+#define ITERATIONS 5000
 #define N_THREADS 4
 
 #include "beehive.h"
@@ -42,9 +43,7 @@ void populate_grid(uint8_t* grid, int height, int width, uint8_t* pattern, int p
  * @param width the width of the grid.
  */
 void update_grid(uint8_t* grid, int height, int width) {
-    int generations = 10;
-
-    for (int g = 0; g < generations; g++ ) {
+    for (int g = 0; g < ITERATIONS; g++ ) {
         #pragma omp parallel for num_threads(N_THREADS)
         for (int i = 1; i <= height; i++) {
             for (int j = 1; j <= width; j++) {
@@ -133,9 +132,9 @@ int main() {
     // --
     // Beehive
     // --
-    int patternHeight = BEEHIVE_HEIGHT;
-    int patternWidth = BEEHIVE_WIDTH;
-    uint8_t* pattern = (uint8_t*)beehive;
+    // int patternHeight = BEEHIVE_HEIGHT;
+    // int patternWidth = BEEHIVE_WIDTH;
+    // uint8_t* pattern = (uint8_t*)beehive;
 
     // --
     // Glider
@@ -147,9 +146,9 @@ int main() {
     // --
     // Grower
     // --
-    // int patternHeight = GROWER_HEIGHT;
-    // int patternWidth = GROWER_WIDTH;
-    // uint8_t* pattern = (uint8_t*)grower;
+    int patternHeight = GROWER_HEIGHT;
+    int patternWidth = GROWER_WIDTH;
+    uint8_t* pattern = (uint8_t*)grower;
 
     populate_grid((uint8_t*) grid, height, width, pattern, patternHeight, patternWidth);
     update_grid((uint8_t*)grid, height, width);
