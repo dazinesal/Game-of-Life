@@ -19,7 +19,9 @@
 - [About The Repository](#about-the-repository)
 - [Getting Started](#getting-started) 
     - [Prerequisites](#prerequisites) 
-    - [Installation](#installation) 
+    - [Installation](#installation)
+        - [Local](#local)
+        - [Lisa Cluster](#lisa-cluster)
 
 
 <!-- ABOUT THE REPOSITORY -->
@@ -44,15 +46,40 @@ Open the terminal and head over to a suitable folder and run the following comma
 git clone git@github.com/dazinesal/Game-of-Life.git
 ```
 
+#### Local
 2. **Build the Repository**.\
 In the terminal, write the following command to build the object files,
 ```sh
 make
 ```
 
-3, **Run the Repository**.\
+3. **Run the Repository**.\
 After, you can write the following command to run the program,
 ```sh
 make run
 ```
+
+#### Lisa Cluster
+2. **Build the Repository**.\
+In the terminal, write the following command to build the object files,
+```sh
+gcc -fopenmp -o main.o main.c -lm
+```
+
+3. **Queue the Build**.\
+After, you can write the following command to run the program,
+```sh
+sbatch main.sh
+```
+
+4. **Retrieve the Output**.\
+Use the following command to see the job list,
+```sh
+squeue -u $LOGNAME
+```
+After the job is done, you can read the output/err with the following command,
+```sh
+cat gol_<PartitionID>.[out|err]
+```
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
