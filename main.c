@@ -3,9 +3,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include <mpi.h>
-#include <omp.h>
+// #include <omp.h>
 // or for MacOSx
-// #include "/usr/local/opt/libomp/include/omp.h"
+#include "/usr/local/opt/libomp/include/omp.h"
 
 #include "main.h"
 
@@ -35,41 +35,45 @@ void populate_grid(bool grid[HEIGHT][WIDTH], bool* pattern, int patternHeight, i
 
 /**
  * Processes the grid.
- * @param iterations the amount of iterations.
  * @param grid the grid.
+ * @param height the height of the grid.
+ * @param width the width of the grid.
  */
-void update_grid(bool grid[HEIGHT][WIDTH], bool new_grid[HEIGHT][WIDTH], int* population) {
-    int local_population = 0;
-    int row, col;
-    #pragma omp parallel for private(row, col) collapse(2) reduction(+:local_population)
+void process_grid(bool *grid, int height, int width) {
+    // Copy the current grid to a temporary grid
+    bool temp_grid[height][width];
+    #pragma omp parallel for collapse(2)
     {
-        for (row = 0; row < HEIGHT; row++) {
-            for (col = 0; col < WIDTH; col++) {
-                int live_neighbours = count_live_neighbors(row, col, grid);
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                temp_grid[i][j] = grid[i*width + j];
+            }
+        }
+    }
 
-                switch (grid[row][col]) {
+    // Update the grid based on the Game of Life rules
+    #pragma omp parallel for collapse(2)
+    {
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                int live_neighbours = count_live_neighbors(row, col, (bool *)temp_grid, height, width);
+
+                switch (temp_grid[row][col]) {
                     case ALIVE:
                         if (live_neighbours < 2 || live_neighbours > 3) {
-                            new_grid[row][col] = DEAD;
-                        } else {
-                            new_grid[row][col] = ALIVE;
-                            local_population++;
-                        }
+                            grid[row * width + col] = DEAD;
+                        } 
                         break;
 
                     case DEAD:
                         if (live_neighbours == 3) { 
-                            new_grid[row][col] = ALIVE;
-                            local_population++;
-                        } else {
-                            new_grid[row][col] = DEAD;
+                            grid[row * width + col] = ALIVE;
                         }
                         break;
                 } 
             }
         }
     }
-    MPI_Allreduce(&local_population, population, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 }
 
 /**
@@ -79,13 +83,14 @@ void update_grid(bool grid[HEIGHT][WIDTH], bool new_grid[HEIGHT][WIDTH], int* po
  * @param grid the cell's grid.
  * @returns the number of live neighbors.
  */
-int count_live_neighbors(int row, int col, bool grid[HEIGHT][WIDTH]) {
+int count_live_neighbors(int row, int col, bool *grid, int height, int width) {
     int count = 0;
     
     // Get all cells from -1 to 1 both X and Y direction.
     #pragma omp parallel for reduction(+:count)
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {
+            // Skip the current cell.
             if (x == 0 && y == 0) {
                 continue;
             }
@@ -93,14 +98,15 @@ int count_live_neighbors(int row, int col, bool grid[HEIGHT][WIDTH]) {
             int neighborX = row + x;
             int neighborY = col + y;
 
+            // Check if the neighbor is within the grid boundaries
             if (
-                neighborX < 0 || neighborX >= HEIGHT || 
-                neighborY < 0 || neighborY >= WIDTH
+                neighborX < 0 || neighborX >= height || 
+                neighborY < 0 || neighborY >= width
             ) {
                 continue;
             }
 
-            if (grid[neighborX][neighborY] == ALIVE) {
+            if (grid[neighborX * width + neighborY] == ALIVE) {
                 count++;
             }
         }
@@ -115,13 +121,32 @@ int count_live_neighbors(int row, int col, bool grid[HEIGHT][WIDTH]) {
  * @param height the height of the grid.
  * @param width the width of the grid.
  */
-void print_grid(bool grid[HEIGHT][WIDTH]) {
-    for (int row = 0; row < HEIGHT; row++) {
-        for (int col = 0; col < WIDTH; col++) {
-            printf("%d", grid[row][col] ? 1 : 0);
+void print_grid(bool *grid, int height, int width) {
+    for (int row = 0; row < height; row++) {
+        for (int col = 0; col < width; col++) {
+            printf("%c ", grid[row * width + col] ? '*' : '.');
         }
         printf("\n");
     }
+}
+
+/**
+ * Counts the population.
+ * @param grid the grid.
+ * @param height the height of the grid.
+ * @param width the width of the grid.
+ */
+int count_population(bool *grid, int height, int width) {
+    int population = 0;
+    #pragma omp parallel for reduction(+:population)
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            if (grid[i * width + j]) {
+                population++;
+            }
+        }
+    }
+    return population;
 }
 
 /**
@@ -134,45 +159,57 @@ int main(int argc, char* argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     bool grid[HEIGHT][WIDTH], new_grid[HEIGHT][WIDTH];
-    if (rank == 0) {
-        // --
-        // Beehive
-        // --
-        // int patternHeight = BEEHIVE_HEIGHT;
-        // int patternWidth = BEEHIVE_WIDTH;
-        // uint8_t* pattern = (uint8_t*)beehive;
 
-        // --
-        // Glider
-        // --
-        // int patternHeight = GLIDER_HEIGHT;
-        // int patternWidth = GLIDER_WIDTH;
-        // uint8_t* pattern = (uint8_t*)glider;
+    // --
+    // Beehive
+    // --
+    // int patternHeight = BEEHIVE_HEIGHT;
+    // int patternWidth = BEEHIVE_WIDTH;
+    // uint8_t* pattern = (uint8_t*)beehive;
 
-        // --
-        // Grower
-        // --
-        int patternHeight = GROWER_HEIGHT;
-        int patternWidth = GROWER_WIDTH;
-        bool* pattern = (bool*)grower;
+    // --
+    // Glider
+    // --
+    // int patternHeight = GLIDER_HEIGHT;
+    // int patternWidth = GLIDER_WIDTH;
+    // uint8_t* pattern = (uint8_t*)glider;
 
-        populate_grid(grid, pattern, patternHeight, patternWidth);
-    }
-    MPI_Bcast(grid, HEIGHT * WIDTH, MPI_C_BOOL, 0, MPI_COMM_WORLD);
+    // --
+    // Grower
+    // --
+    int patternHeight = GROWER_HEIGHT;
+    int patternWidth = GROWER_WIDTH;
+    bool* pattern = (bool*)grower;
 
-    int population;
+    populate_grid(grid, pattern, patternHeight, patternWidth);
+
+    // Split the grid into chunks.
+    int chunk_size = (HEIGHT * WIDTH) / size;
+    bool chunk[chunk_size][WIDTH];
+    MPI_Scatter(grid, chunk_size * WIDTH, MPI_C_BOOL, chunk, chunk_size * WIDTH, MPI_C_BOOL, 0, MPI_COMM_WORLD);
+
+    // Perform the Game of Life.
     for(int iteration = 0; iteration < ITERATIONS; iteration++) {
-        double start = MPI_Wtime();
+        int local_population = count_population((bool*)chunk, chunk_size, WIDTH);
+        int total_population;
 
-        update_grid(grid, new_grid, &population);
-        MPI_Allreduce(MPI_IN_PLACE, new_grid, HEIGHT * WIDTH, MPI_C_BOOL, MPI_LOR, MPI_COMM_WORLD);
-        memcpy(grid, new_grid, sizeof(new_grid));
+        double start_time = MPI_Wtime();
+        process_grid((bool*)chunk, chunk_size, WIDTH);
+        double end_time = MPI_Wtime();
 
-        double end = MPI_Wtime();
+        MPI_Reduce(&local_population, &total_population, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
         if (rank == 0) {
-            printf("Generation: %d, population count: %d, obtained in %f seconds\n", iteration, population, end-start);
+            printf("Generation: %d, population count: %d, obtained in %f seconds\n", iteration, total_population, end_time-start_time);
         }
+    }
+
+    // Gather the processed chunks back to the grid
+    MPI_Gather(chunk, chunk_size*WIDTH, MPI_C_BOOL, grid, chunk_size*WIDTH, MPI_C_BOOL, 0, MPI_COMM_WORLD);
+
+    // Print the final grid
+    if (rank == 0) {
+        print_grid((bool*)grid, HEIGHT, WIDTH);
     }
 
     MPI_Finalize();
