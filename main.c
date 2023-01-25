@@ -40,10 +40,11 @@ void populate_grid(bool grid[HEIGHT][WIDTH], bool* pattern, int patternHeight, i
  */
 void update_grid(bool grid[HEIGHT][WIDTH], bool new_grid[HEIGHT][WIDTH], int* population) {
     int local_population = 0;
-    #pragma omp parallel for collapse(2) reduction(+:local_population)
+    int row, col;
+    #pragma omp parallel for private(row, col) collapse(2) reduction(+:local_population)
     {
-        for (int row = 0; row < HEIGHT; row++) {
-            for (int col = 0; col < WIDTH; col++) {
+        for (row = 0; row < HEIGHT; row++) {
+            for (col = 0; col < WIDTH; col++) {
                 int live_neighbours = count_live_neighbors(row, col, grid);
 
                 switch (grid[row][col]) {
@@ -82,6 +83,7 @@ int count_live_neighbors(int row, int col, bool grid[HEIGHT][WIDTH]) {
     int count = 0;
     
     // Get all cells from -1 to 1 both X and Y direction.
+    #pragma omp parallel for reduction(+:count)
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {
             if (x == 0 && y == 0) {
