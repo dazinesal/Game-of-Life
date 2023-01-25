@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
-#SBATCH --time=00:05:00
+#SBATCH --time=00:10:00
 #SBATCH --partition=normal
 #SBATCH --output=gol_%j.out
 #SBATCH --error=gol_%j.err
