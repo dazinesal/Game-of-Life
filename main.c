@@ -2,8 +2,8 @@
 #include <stdlib.h>
 // for MacOSx users, 
 // #include "/usr/local/opt/libomp/include/omp.h"
-// for Windows users,
-// #include <omp.h>
+// for Windows/Linux users,
+#include <omp.h>
 
 #include "main.h"
 #define N_THREADS 4
