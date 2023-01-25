@@ -3,9 +3,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include <mpi.h>
-// #include <omp.h>
+#include <omp.h>
 // or for MacOSx
-#include "/usr/local/opt/libomp/include/omp.h"
+// #include "/usr/local/opt/libomp/include/omp.h"
 
 #include "main.h"
 
