@@ -81,8 +81,19 @@ void update_grid(int iterations, uint8_t* grid, int height, int width) {
                 } 
             }
         }
-        print_grid((uint8_t*)grid, height, width);
-        MPI_Allgather(new_grid + start * width, rows_per_process * width, MPI_UNSIGNED_CHAR, grid, rows_per_process * width, MPI_UNSIGNED_CHAR, MPI_COMM_WORLD);
+        int error_code = MPI_Gather(new_grid + start * width, (end - start) * width, MPI_UNSIGNED_CHAR, grid, (end - start) * width, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+        
+        if (error_code != MPI_SUCCESS) {
+            printf("An error occurred while gathering the grid. Error code: %d\n", error_code);
+            MPI_Abort(MPI_COMM_WORLD, error_code);
+        }
+
+        if (rank == 0) {
+            printf("Grid after update: \n");
+            print_grid((uint8_t*)grid, height, width);
+        }
+
+        // Free the memory
         free(new_grid);
     }
 }
@@ -144,9 +155,9 @@ void print_grid(uint8_t* grid, int height, int width) {
  * Main Method
  */
 int main(int argc, char* argv[]) {
-    int height = 3000;
-    int width = 3000;
-    uint8_t grid[3000][3000] = {0};
+    int height = 33;
+    int width = 97;
+    uint8_t grid[33][97] = {0};
 
     MPI_Init(&argc, &argv);
 
@@ -173,7 +184,8 @@ int main(int argc, char* argv[]) {
 
     populate_grid((uint8_t*) grid, height, width, pattern, patternHeight, patternWidth);
     print_grid((uint8_t*)grid, height, width);
-    update_grid(ITERATIONS, (uint8_t*)grid, height, width);
+    update_grid(10, (uint8_t*)grid, height, width);
+
     MPI_Finalize();
     return 0;
 }
