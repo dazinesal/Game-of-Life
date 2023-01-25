@@ -57,6 +57,10 @@ void update_grid(int iterations, uint8_t* grid, int height, int width) {
     for(int iteration = 0; iteration < iterations; iteration++) {
         int population = 0;
         new_grid = malloc(height * width * sizeof(uint8_t));
+
+        double start_time, end_time;
+        start_time = MPI_Wtime();
+
         #pragma omp parallel for private(alive_neighbours)
         for (int row = start; row < end; row++) {
             for (int col = 0; col < width; col++) {
@@ -84,6 +88,8 @@ void update_grid(int iterations, uint8_t* grid, int height, int width) {
                 } 
             }
         }
+        end_time = MPI_Wtime();
+
         int error_code = MPI_Gather(new_grid + start * width, (end - start) * width, MPI_UNSIGNED_CHAR, grid, (end - start) * width, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
         
         if (error_code != MPI_SUCCESS) {
@@ -92,9 +98,8 @@ void update_grid(int iterations, uint8_t* grid, int height, int width) {
         }
 
         if (rank == 0) {
-            printf("Grid after update: \n");
             // print_grid((uint8_t*)grid, height, width);
-            printf("Population count in generation %d is %d \n", iteration, population);
+            printf("Generation: %d, population count: %d, obtained in %f seconds\n", iteration, population, end_time-start_time);
         }
 
         // Free the memory
