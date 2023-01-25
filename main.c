@@ -6,6 +6,7 @@
 // #include <omp.h>
 
 #include "main.h"
+#define N_THREADS 1
 
 #include "beehive.h"
 extern uint8_t beehive[BEEHIVE_HEIGHT][BEEHIVE_WIDTH];
@@ -41,24 +42,30 @@ void populate_grid(uint8_t* grid, int height, int width, uint8_t* pattern, int p
  * @param width the width of the grid.
  */
 void update_grid(uint8_t* grid, int height, int width) {
-    int x = height / 2;
-    int y = width / 2;
+    int generations = 10;
 
-    int aliveNeighbors = count_live_neighbors(x, y, grid, height, width);
-    
-    // Check all central cells of the matrix
-    switch (grid[x * width + y]) {
-        case 0: // dead
-            if (aliveNeighbors == 3) {
-                grid[x * width + y] = ALIVE;
-            }
-            break;
+    for (int g = 0; g < generations; g++ ) {
+        #pragma omp parallel for num_threads(N_THREADS)
+        for (int i = 1; i <= height; i++) {
+            for (int j = 1; j <= width; j++) {
+                int aliveNeighbors = count_live_neighbors(i, j, grid, height, width);
+                
+                // Check all central cells of the matrix
+                switch (grid[i * width + j]) {
+                    case 0: // dead
+                        if (aliveNeighbors == 3) {
+                            grid[i * width + j] = ALIVE;
+                        }
+                        break;
 
-        case 1: // alive
-            if (aliveNeighbors != 3) {
-                grid[x * width + y] = DEAD;
+                    case 1: // alive
+                        if (aliveNeighbors < 2 || aliveNeighbors > 3) {
+                            grid[i * width + j] = DEAD;
+                        }
+                        break;
+                }           
             }
-            break;
+        }
     }
 }
 
