@@ -52,11 +52,13 @@ void update_grid(int iterations, uint8_t* grid, int height, int width) {
         end = height; // last process gets the remaining rows.
     }
 
+    uint8_t* new_grid;
+    int alive_neighbours;
     for(int iteration = 0; iteration < iterations; iteration++) {
-        uint8_t* new_grid = malloc(height * width * sizeof(uint8_t));
+        new_grid = malloc(height * width * sizeof(uint8_t));
         for (int i = start; i < end; i++) {
             for (int j = 0; j < width; j++) {
-                int alive_neighbours = count_live_neighbors(i, j, grid, height, width);
+                alive_neighbours = count_live_neighbors(i, j, grid, height, width);
 
                 // Update cell
                 switch (grid[i * width + j]) {
@@ -107,13 +109,13 @@ int count_live_neighbors(int x, int y, uint8_t* grid, int height, int width) {
             int neighborY = y + j;
 
             if (
-                neighborX < 0 || neighborX > height || 
-                neighborY < 0 || neighborY > width
+                neighborX < 0 || neighborX >= height || 
+                neighborY < 0 || neighborY >= width
             ) {
                 continue;
             }
 
-            if (grid[neighborX * height + neighborY] == ALIVE) {
+            if (grid[neighborX * width + neighborY] == ALIVE) {
                 count++;
             }
         }
@@ -171,7 +173,6 @@ int main(int argc, char* argv[]) {
     populate_grid((uint8_t*) grid, height, width, pattern, patternHeight, patternWidth);
     print_grid((uint8_t*)grid, height, width);
     update_grid(ITERATIONS, (uint8_t*)grid, height, width);
-
     MPI_Finalize();
     return 0;
 }
