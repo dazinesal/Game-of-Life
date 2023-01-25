@@ -1,12 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <mpi.h>
-#include <omp.h>
-// or for MacOSx
-// #include "/usr/local/opt/libomp/include/omp.h"
-
 #include "main.h"
 
 // #include "beehive.h"
@@ -153,12 +144,11 @@ int count_population(bool *grid, int height, int width) {
  * Main Method
  */
 int main(int argc, char* argv[]) {
-    MPI_Init(&argc, &argv);
+    bool *grid;
     int rank, size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    bool grid[HEIGHT][WIDTH], new_grid[HEIGHT][WIDTH];
+    int i;
+    double start_time, end_time;
+    int population;
 
     // --
     // Beehive
@@ -180,36 +170,33 @@ int main(int argc, char* argv[]) {
     int patternHeight = GROWER_HEIGHT;
     int patternWidth = GROWER_WIDTH;
     bool* pattern = (bool*)grower;
+    
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    populate_grid(grid, pattern, patternHeight, patternWidth);
+    // Populate the gri.d
+    if (rank == 0) {
+        grid = (bool *) malloc(HEIGHT * WIDTH * sizeof(bool));
+        populate_grid(grid, pattern, patternHeight, patternWidth);
+    }
 
     // Split the grid into chunks.
     int chunk_size = (HEIGHT * WIDTH) / size;
-    bool chunk[chunk_size][WIDTH];
-    MPI_Scatter(grid, chunk_size * WIDTH, MPI_C_BOOL, chunk, chunk_size * WIDTH, MPI_C_BOOL, 0, MPI_COMM_WORLD);
+    bool *chunk = (bool *) malloc(chunk_size * sizeof(bool));
+    MPI_Scatter(grid, chunk_size, MPI_C_BOOL, chunk, chunk_size, MPI_C_BOOL, 0, MPI_COMM_WORLD);
 
     // Perform the Game of Life.
-    for(int iteration = 0; iteration < ITERATIONS; iteration++) {
-        int local_population = count_population((bool*)chunk, chunk_size, WIDTH);
-        int total_population;
+    for(int i = 0; i < ITERATIONS; i++) {
+        start_time = MPI_Wtime();
+        process_grid((bool*)chunk, HEIGHT, WIDTH);
+        end_time = MPI_Wtime();
+        MPI_Gather(chunk, chunk_size, MPI_C_BOOL, grid, chunk_size, MPI_C_BOOL, 0, MPI_COMM_WORLD);
 
-        double start_time = MPI_Wtime();
-        process_grid((bool*)chunk, chunk_size, WIDTH);
-        double end_time = MPI_Wtime();
-
-        MPI_Reduce(&local_population, &total_population, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-
+        population = count_population((bool*)grid, HEIGHT, WIDTH);
         if (rank == 0) {
-            printf("Generation: %d, population count: %d, obtained in %f seconds\n", iteration, total_population, end_time-start_time);
+            printf("Generation: %d, population count: %d, obtained in %f seconds\n", i, population, end_time-start_time);
         }
-    }
-
-    // Gather the processed chunks back to the grid
-    MPI_Gather(chunk, chunk_size*WIDTH, MPI_C_BOOL, grid, chunk_size*WIDTH, MPI_C_BOOL, 0, MPI_COMM_WORLD);
-
-    // Print the final grid
-    if (rank == 0) {
-        print_grid((bool*)grid, HEIGHT, WIDTH);
     }
 
     MPI_Finalize();
