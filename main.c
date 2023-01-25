@@ -1,89 +1,128 @@
-/******************************************************************************
-
-*******************************************************************************/
-
 #include <stdio.h>
-#include "stdint.h"
-#include <inttypes.h>
-#define GROWER_HEIGHT (11)
-#define GROWER_WIDTH (97)
+#include <stdlib.h>
+#include "/usr/local/opt/libomp/include/omp.h"
 
-uint8_t grower[GROWER_HEIGHT][GROWER_WIDTH] = {
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1},
-    {0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-    {1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-};
+#include "main.h"
+#include "beehive.h"
 
-int count (int m, int n, uint8_t matrix[m][n], int a, int b){
-    int i,j,live=0;
+extern uint8_t beehive[BEEHIVE_HEIGHT][BEEHIVE_WIDTH];
+
+/**
+ * Initializes the grid.
+ * @param grid the grid.
+ * @param height the height of the grid.
+ * @param width the width of the grid.
+ * @param pattern the pattern.
+ * @param patternHeight the height of the pattern.
+ * @param patternWidth the width of the pattern.
+ */
+void populate_grid(uint8_t* grid, int height, int width, uint8_t* pattern, int patternHeight, int patternWidth) {
+    for (int i = 0; i < patternHeight; i++) {
+        for (int j = 0; j < patternWidth; j++) {
+            // grid[i][j] == grid[i*width+j] = value;
+            grid[((height/2)+i) * width + ((width / 2)+j)] = pattern[i * patternWidth + j];
+        }
+    }
+}
+
+/**
+ * Processes the grid.
+ * @param grid the grid.
+ * @param height the height of the grid.
+ * @param width the width of the grid.
+ */
+void update_grid(uint8_t* grid, int height, int width) {
+    int x = height / 2;
+    int y = width / 2;
+
+    int aliveNeighbors = count_live_neighbors(x, y, grid, height, width);
     
-    //counting the number of alive cells from the adjacent 8 cells
-    for (i=0;i<2;i++){
-        for (j=0;j<2;j++){
-            if (matrix[a-1+i][b-1+j]==1 && i!=j){
-                live ++;
+    // Check all central cells of the matrix
+    switch (grid[x * width + y]) {
+        case 0: // dead
+            if (aliveNeighbors == 3) {
+                grid[x * width + y] = ALIVE;
             }
-            
-        }
+            break;
+
+        case 1: // alive
+            if (aliveNeighbors != 3) {
+                grid[x * width + y] = DEAD;
+            }
+            break;
     }
-    return live;
 }
 
+/**
+ * Counts the number of live neighbors for cell i, j.
+ * @param x the targeted cell's row.
+ * @param y the targeted cell's column.
+ * @param grid the cell's grid.
+ * @param height the height of the grid.
+ * @param width the width of the grid.
+ * @returns the number of live neighbors.
+ */
+int count_live_neighbors(int x, int y, uint8_t* grid, int height, int width) {
+    int count = 0;
+    
+    // Get all cells from -1 to 1 both X and Y direction.
+    for (int i = -1; i <= 1; i++) {
+        for (int j = -1; j <= 1; j++) {
+            if (i == 0 && j == 0) {
+                continue;
+            }
 
-void life (int m, int n, uint8_t matrix[m][n]){
-    int a = m/2;
-    int b = n/2;
-    int i,j;
-    
-    
-    //checking the central cell of the matrix
-    switch (matrix[a][b]){
-        case 0: //if dead
-        if (count(m,n,matrix,a,b) == 3){
-            matrix[a][b]=1;
+            int neighborX = x + i;
+            int neighborY = y + j;
+
+            if (
+                neighborX < 0 || neighborX > height || 
+                neighborY < 0 || neighborY > width
+            ) {
+                continue;
+            }
+
+            if (grid[neighborX * height + neighborY] == ALIVE) {
+                count++;
+            }
         }
-        
-        case 1: //if alive
-        if (count(m,n,matrix,a,b) < 2 || count(m,n,matrix,a,b) > 3){
-            matrix[a][b]=0;
-        }
-        
     }
-    
 
+    return count;
 }
 
-int main()
-{
-    uint8_t matrix[3000][3000] = {0};
-    int i,j;
-   
-    //populating the matrix with the grower pattern
-    for (i=0;i<GROWER_HEIGHT;i++){
-        for (j=0;j<GROWER_WIDTH;j++){
-            matrix[1500+i][1500+j] = grower[j][j];
-            
+/**
+ * Prints the grid.
+ * @param grid the grid.
+ * @param height the height of the grid.
+ * @param width the width of the grid.
+ */
+void print_grid(uint8_t* grid, int height, int width) {
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            printf("%d ", grid[i * width + j]);
         }
+        printf("\n");
     }
-    
-    //printing out the matrix
-    for (i=0; i<3000; i++){
-        for(j=0; j<3000; j++)
-            {printf("%" PRIu8 "\n", matrix[i][j]);} // doesn't work yet
-            printf("\n");
-        
-    }
-    
-    //running the life function
-    //life(3000, 3000, matrix);
-    
+}
+
+/**
+ * Main Method
+ */
+int main() {
+    int height = 3000;
+    int width = 3000;
+    uint8_t grid[3000][3000] = {0};
+
+    // --
+    // Beehive
+    // --
+    int patternHeight = BEEHIVE_HEIGHT;
+    int patternWidth = BEEHIVE_WIDTH;
+    uint8_t* pattern = (uint8_t*)beehive;
+
+    populate_grid((uint8_t*) grid, height, width, pattern, patternHeight, patternWidth);
+    print_grid((uint8_t*)grid, height, width);
+
     return 0;
 }
