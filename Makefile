@@ -10,7 +10,7 @@ SOURCES = main.c
 EXECUTABLE = $(SOURCES:.c=.o)
 CC = mpiCC
 CFLAGS = -openmp
-PROCESSES = 1
+PROCESSES = 12
 
 all: $(HEADERS) $(EXECUTABLE)
 

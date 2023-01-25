@@ -6,7 +6,7 @@
 // #include <omp.h>
 
 #include "main.h"
-#define N_THREADS 1
+#define N_THREADS 4
 
 #include "beehive.h"
 extern uint8_t beehive[BEEHIVE_HEIGHT][BEEHIVE_WIDTH];
