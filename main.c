@@ -56,6 +56,7 @@ void update_grid(int iterations, uint8_t* grid, int height, int width) {
     int alive_neighbours;
     for(int iteration = 0; iteration < iterations; iteration++) {
         new_grid = malloc(height * width * sizeof(uint8_t));
+        #pragma omp parallel for private(alive_neighbours)
         for (int i = start; i < end; i++) {
             for (int j = 0; j < width; j++) {
                 alive_neighbours = count_live_neighbors(i, j, grid, height, width);
