@@ -200,7 +200,7 @@ int main(int argc, char* argv[]) {
 
     const double program_end = omp_get_wtime();
 
-    printf("The simulation of %d generations took %f seconds to, using %d threads", ITERATIONS, end-time - start_time, omp_get_max_threads());
+    printf("The simulation of %d generations took %f seconds to, using %d threads", ITERATIONS, program_end - program_start, omp_get_max_threads());
 
     return(EXIT_SUCCESS);
 }
