@@ -169,6 +169,8 @@ void print_grid(bool *grid, int height, int width) {
  * @returns the processes' status.
  */
 int main(int argc, char* argv[]) {
+    const double program_start = omp_get_wtime();
+
     int i; 
     int population;
     double start_time, end_time;
@@ -193,8 +195,12 @@ int main(int argc, char* argv[]) {
         memcpy(grid, swap_grid, HEIGHT * WIDTH * sizeof(bool));
         
         population = count_population(grid, HEIGHT, WIDTH);
-        printf("Generation: %d, population count: %d, obtained in %f seconds\n", i, population, end_time-start_time);
+        printf("Generation: %d, population count: %d, obtained in %f seconds\n", i, population, end_time - start_time);
     }
+
+    const double program_end = omp_get_wtime();
+
+    printf("The simulation of %d generations took %f seconds to, using %d threads", ITERATIONS, end-time - start_time, omp_get_max_threads());
 
     return(EXIT_SUCCESS);
 }

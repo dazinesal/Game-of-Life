@@ -9,7 +9,7 @@
 <div align="center">
   <h3 align="center">Game of Life</h3>
   <p align="center">
-    Assignment 3 by Group 3.
+    This is simple demonstration of <a href="https://en.wikipedia.org/wiki/Conway's_Game_of_Life">Conway's "Game of Life"</a>.
   </p>
 </div>
 
@@ -27,7 +27,7 @@
 <!-- ABOUT THE REPOSITORY -->
 ## About The Repository
 ---
-Description here :)
+This is simple demonstration of [Conway's "Game of Life"](https://en.wikipedia.org/wiki/Conway's_Game_of_Life) for the third assignment of the course 'High Performance Computing and Big Data' performed by Group 3.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -35,7 +35,7 @@ Description here :)
 ## Getting Started
 ---
 ### Prerequisites
-- [OpenMPI](https://www.open-mpi.org/)
+- [OpenMP](https://en.wikipedia.org/wiki/OpenMP)
 
 ### Installation
 A step by step series of examples that tell you how to get a version running.
@@ -63,7 +63,7 @@ make run
 2. **Build the Repository**.\
 In the terminal, write the following command to build the object files,
 ```sh
-mpicc -o main.o main.c -lm
+gcc -fopenmp main.c -o main.o
 ```
 
 3. **Queue the Build**.\

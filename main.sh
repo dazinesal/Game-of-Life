@@ -15,8 +15,7 @@ module load GCC/9.3.0
 echo "OpenMP Game Of Life"
 echo
 
-for ncores in {16..16}
-
+for ncores in 1 2 4 8 16
 do
   export OMP_NUM_THREADS=$ncores
   echo "CPUS: " $OMP_NUM_THREADS
