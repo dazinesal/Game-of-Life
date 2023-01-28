@@ -8,9 +8,6 @@ TAR_FILE = game-of-life-assignment.tar.gz
 IMPLEMENTATION = main.o
 SOURCES = main.c
 EXECUTABLE = $(SOURCES:.c=.o)
-CC = mpiCC
-CFLAGS = -openmp
-PROCESSES = 1
 
 all: $(HEADERS) $(EXECUTABLE)
 
@@ -19,11 +16,9 @@ tar: $(TAR_FILE)
 $(TAR_FILE): $(TAR_FILES)
 	tar cvfz $(TAR_FILE) $(TAR_FILES)
 
-$(EXECUTABLE): $(SOURCES)
-	$(CC) $(CFLAGS) $(SOURCES) -o $(EXECUTABLE)
-
 run: $(EXECUTABLE)
-	mpirun -np $(PROCESSES) $(EXECUTABLE)
+	gcc -fopenmp $(SOURCES) -o $(IMPLEMENTATION)
+	./$(IMPLEMENTATION)
 
 clean:
 	rm -rf $(JUNK)

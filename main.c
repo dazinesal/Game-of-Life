@@ -1,14 +1,35 @@
-#include <mpi.h>
 #include "main.h"
 
-// #include "beehive.h"
-// extern uint8_t beehive[BEEHIVE_HEIGHT][BEEHIVE_WIDTH];
-
-// #include "glider.h"
-// extern uint8_t glider[GLIDER_HEIGHT][GLIDER_WIDTH];
-
+#include "beehive.h"
+#include "glider.h"
 #include "grower.h"
-extern uint8_t grower[GROWER_HEIGHT][GROWER_WIDTH];
+
+// --
+// Beehive
+// --
+// int patternHeight = BEEHIVE_HEIGHT;
+// int patternWidth = BEEHIVE_WIDTH;
+// uint8_t* pattern = (uint8_t*)beehive;
+
+// --
+// Glider
+// --
+// int patternHeight = GLIDER_HEIGHT;
+// int patternWidth = GLIDER_WIDTH;
+// uint8_t* pattern = (uint8_t*)glider;
+
+// --
+// Grower
+// --
+int patternHeight = GROWER_HEIGHT;
+int patternWidth = GROWER_WIDTH;
+bool* pattern = (bool*)grower;
+
+bool *grid;
+bool *swap_grid;
+
+const int dx[8] = {-1, -1, -1, 0, 1, 1, 1, 0};
+const int dy[8] = {-1, 0, 1, 1, 1, 0, -1, -1};
 
 /**
  * Initializes the grid.
@@ -18,8 +39,10 @@ extern uint8_t grower[GROWER_HEIGHT][GROWER_WIDTH];
  * @param patternWidth the width of the pattern.
  */
 void populate_grid(bool* grid, bool* pattern, int patternHeight, int patternWidth) {
-    for (int row = 0; row < patternHeight; row++) {
-        for (int col = 0; col < patternWidth; col++) {
+    int row, col;
+    for (row = 0; row < patternHeight; row++) {
+        for (col = 0; col < patternWidth; col++) {
+            // Set the pattern on the middle [row ½, col ½].
             grid[((HEIGHT/2) + row) * WIDTH + ((WIDTH/2) + col)] = pattern[row * patternWidth + col];
         }
     }
@@ -32,85 +55,76 @@ void populate_grid(bool* grid, bool* pattern, int patternHeight, int patternWidt
  * @param width the width of the grid.
  */
 void process_grid(bool *grid, int height, int width) {
+    int row, col = 0;
+
     // Update the grid based on the Game of Life rules
-    #pragma omp parallel for collapse(2)
-    {
-        for (int row = 0; row < height; row++) {
-            for (int col = 0; col < width; col++) {
-                register int live_neighbours = count_live_neighbors(row, col, grid, height, width);
-
-                int idx = row * width + col;
-                register bool current_cell = grid[idx];
-                switch (current_cell) {
-                    case ALIVE:
-                        if (live_neighbours < 2 || live_neighbours > 3) {
-                            grid[idx] = DEAD;
-                        } 
-                        break;
-
-                    case DEAD:
-                        if (live_neighbours == 3) { 
-                            grid[idx] = ALIVE;
-                        }
-                        break;
-                } 
-            }
+    #pragma omp parallel for private(row, col)
+    for (row = 1; row < HEIGHT - 1; row++) {
+        for (col = 1; col < WIDTH - 1; col++) {
+            swap_grid[row * WIDTH + col] = process_cell(grid[row * WIDTH + col], row, col, grid, HEIGHT, WIDTH);
         }
     }
 }
 
 /**
- * Counts the number of live neighbors for cell i, j.
+ * Processes the cell.
+ * @param status the status of the cell.
+ * @param row the row of the cell.
+ * @param col the column of the cell.
+ * @param grid the grid.
+ * @param height the height of the grid.
+ * @param width the width of the grid.
+ * @returns the processed cell's status.
+*/
+bool process_cell(bool status, int row, int col, bool *grid, int height, int width) {
+    // Count the number of neighbours
+    int live_neighbours = count_live_neighbors(row, col, grid, HEIGHT, WIDTH);
+
+    // Game of life rules.
+    switch (status) {
+        case ALIVE:
+            if (live_neighbours < 2 || live_neighbours > 3) {
+                return DEAD;
+            } 
+            break;
+
+        case DEAD:
+            if (live_neighbours == 3) { 
+                return ALIVE;
+            } 
+            break;
+    } 
+    return status;
+}
+
+/**
+ * Counts the number of live neighbors for cell row, col.
  * @param x the targeted cell's row.
  * @param y the targeted cell's column.
  * @param grid the cell's grid.
+ * @param height the grid's height.
+ * @param width the grid's width.
  * @returns the number of live neighbors.
  */
 int count_live_neighbors(int row, int col, bool *grid, int height, int width) {
     int count = 0;
-    
-    // Get all cells from -1 to 1 both X and Y direction.
-    #pragma omp parallel for reduction(+:count)
-    for (int x = -1; x <= 1; x++) {
-        for (int y = -1; y <= 1; y++) {
-            // Skip the current cell.
-            if (x == 0 && y == 0) {
-                continue;
-            }
+    int neighborX, neighborY;
 
-            int neighborX = row + x;
-            int neighborY = col + y;
+    // We loop over all 8 neighbors of cell row, col.
+    for (int xy = 0; xy < 8; xy++) {
+        neighborX = row + dx[xy];
+        neighborY = col + dy[xy];
 
-            // Check if the neighbor is within the grid boundaries
-            if (
-                neighborX < 0 || neighborX >= height || 
-                neighborY < 0 || neighborY >= width
-            ) {
-                continue;
-            }
-
-            if (grid[neighborX * width + neighborY] == ALIVE) {
+        // Check if the neighbor is within the grid boundaries
+        if ((unsigned)neighborX < (unsigned)height && (unsigned)neighborY < (unsigned)width) {
+                // Count if alive.
+            if (*(grid + neighborX * width + neighborY)) {
                 count++;
             }
         }
     }
-
+    
     return count;
-}
-
-/**
- * Prints the grid.
- * @param grid the grid.
- * @param height the height of the grid.
- * @param width the width of the grid.
- */
-void print_grid(bool *grid, int height, int width) {
-    for (int row = 0; row < height; row++) {
-        for (int col = 0; col < width; col++) {
-            printf("%c", grid[row * width + col] ? '*' : '.');
-        }
-        printf("\n");
-    }
 }
 
 /**
@@ -120,11 +134,11 @@ void print_grid(bool *grid, int height, int width) {
  * @param width the width of the grid.
  */
 int count_population(bool *grid, int height, int width) {
+    int row, col;
     int population = 0;
-    #pragma omp parallel for reduction(+:population)
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            if (grid[i * width + j]) {
+    for (row = 0; row < height; row++) {
+        for (col = 0; col < width; col++) {
+            if (grid[row * width + col]) {
                 population++;
             }
         }
@@ -133,50 +147,55 @@ int count_population(bool *grid, int height, int width) {
 }
 
 /**
+ * Prints the grid.
+ * @param grid the grid.
+ * @param height the height of the grid.
+ * @param width the width of the grid.
+ */
+void print_grid(bool *grid, int height, int width) {
+    int row, col;
+    for (row = 0; row < height; row++) {
+        for (col = 0; col < width; col++) {
+            printf("%c", grid[row * width + col] ? '*' : '.');
+        }
+        printf("\n");
+    }
+}
+
+/**
  * Main Method
+ * @param argc the argument count
+ * @param argv the argument values.
+ * @returns the processes' status.
  */
 int main(int argc, char* argv[]) {
-    bool *grid;
-    bool *swap_grid;
-    int i;
-    double start_time, end_time;
+    int i; 
     int population;
+    double start_time, end_time;
 
-    // --
-    // Beehive
-    // --
-    // int patternHeight = BEEHIVE_HEIGHT;
-    // int patternWidth = BEEHIVE_WIDTH;
-    // uint8_t* pattern = (uint8_t*)beehive;
-
-    // --
-    // Glider
-    // --
-    // int patternHeight = GLIDER_HEIGHT;
-    // int patternWidth = GLIDER_WIDTH;
-    // uint8_t* pattern = (uint8_t*)glider;
-
-    // --
-    // Grower
-    // --
-    int patternHeight = GROWER_HEIGHT;
-    int patternWidth = GROWER_WIDTH;
-    bool* pattern = (bool*)grower;
-    
+    // Allocate the memory and set the default value to DEAD (0).
+    grid = (bool *) calloc(HEIGHT * WIDTH, sizeof(bool));
+    swap_grid = (bool *) calloc(HEIGHT * WIDTH, sizeof(bool));
+    if (grid == NULL || swap_grid == NULL) {
+        fprintf(stderr, "Error: calloc failed \n");
+        exit(EXIT_FAILURE);
+    }
     // Populate the grid.
-    grid = (bool *) malloc(HEIGHT * WIDTH * sizeof(bool));
     populate_grid(grid, pattern, patternHeight, patternWidth);
 
     // Perform the Game of Life.
-    for(int i = 1; i <= ITERATIONS; i++) 
-    { 
-        start_time = MPI_Wtime();
+    for (i = 1; i <= ITERATIONS; i++) {
+        start_time = omp_get_wtime();
         process_grid(grid, HEIGHT, WIDTH);
-        end_time = MPI_Wtime();
+        end_time = omp_get_wtime();
+
+        // Copy the values back to grid.
+        memcpy(grid, swap_grid, HEIGHT * WIDTH * sizeof(bool));
         
-        population = count_population((bool*)grid, HEIGHT, WIDTH);
+        population = count_population(grid, HEIGHT, WIDTH);
         printf("Generation: %d, population count: %d, obtained in %f seconds\n", i, population, end_time-start_time);
     }
 
-    return 0;
+    return(EXIT_SUCCESS);
 }
+
